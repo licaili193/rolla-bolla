@@ -102,7 +102,7 @@ def create_humanoid(space, config=default_humanoid_config):
         config["friction"],
         config["elasticity"],
         collision_types['torso'],
-        parent_anchor=(300, 300),
+        parent_anchor=config["torso_anchor"],
         angle=math.pi / 2,
         )
 
