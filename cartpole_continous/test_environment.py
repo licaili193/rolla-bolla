@@ -21,34 +21,45 @@ pymunk.pygame_util.positive_y_is_up = False
 background_color = pygame.Color('white')
 
 def handle_events():
-    action = 0
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                action += config["action_boundaries"][0] / 2 # Apply a force to the left
-            elif event.key == pygame.K_RIGHT:
-                action += config["action_boundaries"][1] / 2 # Apply a force to the right
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                action -= config["action_boundaries"][0] / 2 # Stop a force to the left
-                action = max(action, 0)
-            elif event.key == pygame.K_RIGHT:
-                action -= config["action_boundaries"][1] / 2 # Stop a force to the right
-                action = min(action, 0)
     return action
 
 # Main loop
 running = True
+action = 0
+d_action = (config["action_boundaries"][1] - config["action_boundaries"][0])
 while running:
     action = handle_events()
+
+    # Get the state of all keyboard keys
+    keys = pygame.key.get_pressed()
+    
+    if action > 0:
+        action -= d_action
+        if action < 0:
+            action = 0
+    if action < 0:
+        action += d_action
+        if action > 0:
+            action = 0
+
+    if keys[pygame.K_LEFT]:
+        action -= d_action
+        if action < config["action_boundaries"][0]:
+            action = config["action_boundaries"][0]
+    if keys[pygame.K_RIGHT]:
+        action += d_action
+        if action > config["action_boundaries"][1]:
+            action = config["action_boundaries"][1]
     
     # Step the environment with the current action
     next_state, reward, done = env.step(action)
 
     # Reset if the episode is done
     if done:
+        action = 0
         env.reset()
     
     # Clear screen
@@ -79,6 +90,6 @@ while running:
     pygame.display.flip()
     
     # Control the frame rate for visibility
-    clock.tick(50)
+    clock.tick(config["fps"])
 
 pygame.quit()

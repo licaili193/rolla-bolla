@@ -1,8 +1,6 @@
-import math
 import numpy as np
 import pymunk
 from pymunk.vec2d import Vec2d
-import pymunk.pygame_util
 
 config = {
     "x_size": 600,
@@ -10,7 +8,7 @@ config = {
     "platform_position": (300, 550),
     "platform_height": 10,
     "cart_mass": 1.0,
-    "pole_mass": 0.2,
+    "pole_mass": 0.1,
     "pole_length": 100.0,  # Half length for pymunk
     "pole_width": 10.0,
     "friction": 0.0,
@@ -18,8 +16,8 @@ config = {
     "cart_width": 50,
     "cart_height": 30,
     "gravity": 981,  # pymunk uses pixels/s^2
-    "fps": 50,
-    "action_boundaries": (-10000, 10000),
+    "fps": 30,
+    "action_boundaries": (-400, 400),
     "angle_threshold": 1.2,  # Maximum angle (in radians) before considering the episode done
     "max_steps": 200,  # Maximum steps in an episode
 }
@@ -71,7 +69,7 @@ class Environment:
         handler.begin = lambda *args, **kwargs: False
 
         # Step once with an action so that it's not an equilibrium state
-        self.step(config["action_boundaries"][0] / 50)
+        self.cart.apply_impulse_at_local_point((-50, 0), (0, 0))
 
     def reset(self):
         """Resets the environment to an initial state."""
@@ -82,6 +80,8 @@ class Environment:
 
     def step(self, action):
         """Simulates taking an action in the environment."""
+        state = self._get_state()
+
         # Check for action boundaries
         action = max(config["action_boundaries"][0], min(action, config["action_boundaries"][1]))
 
@@ -96,14 +96,10 @@ class Environment:
         self.steps_since_reset += 1
         
         next_state = self._get_state()
-        reward = self._calculate_reward(next_state)
+        reward = self._calculate_reward(state)
         done = self._check_done(next_state)
         
         return next_state, reward, done
-    
-    def scale_action(self, action):
-        # Scale action from -1 to 1 to the action boundaries
-        return action * (config["action_boundaries"][1] - config["action_boundaries"][0]) / 2.0 + (config["action_boundaries"][1] + config["action_boundaries"][0]) / 2.0
 
     def _get_state(self):
         """Returns the current state of the system."""
@@ -119,7 +115,7 @@ class Environment:
         # Define a small threshold angle within which the reward is 1
         # It could be a fraction of the config["angle_threshold"]
         upright_threshold = config["angle_threshold"] * 0.1  # Example: 10% of the angle_threshold
-        zero_reward_threshold = config["angle_threshold"] * 0.3
+        zero_reward_threshold = config["angle_threshold"] * 0.9
 
         if pole_angle <= upright_threshold:
             reward = 1
