@@ -24,6 +24,7 @@ def main():
     # Add platform at the bottom
 
     platform = level.create_platform(space, (600 / 2, 600 - 50), 600, 10)
+    plank = level.create_plank(space, (600 / 2, 600 - 100), 150, 5, 2)
 
     running = True
     while running:
