@@ -3,13 +3,21 @@ from tensorflow.keras import layers, Model
 import numpy as np
 import tensorflow_probability as tfp
 
+config = {
+    "gamma": 0.9,
+    "alpha_actor": 0.0025,
+    "alpha_critic": 0.005,
+    "network_size": 64,
+    "std_epsilon": 1e-5,
+}
+
 class Agent:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-        self.gamma = 0.9  # Discount factor for future rewards
-        self.alpha_actor = 0.0025  # Learning rate for the actor
-        self.alpha_critic = 0.005  # Learning rate for the critic
+        self.gamma = config["gamma"]  # Discount factor for future rewards
+        self.alpha_actor = config["alpha_actor"]  # Learning rate for the actor
+        self.alpha_critic = config["alpha_critic"]  # Learning rate for the critic
 
         self.actor = self.build_actor()
         self.critic = self.build_critic()
@@ -17,14 +25,14 @@ class Agent:
     def build_actor(self):
         # Define actor model that maps states to action distributions (mean and standard deviation)
         state_input = layers.Input(shape=(self.state_size,))
-        dense1 = layers.Dense(64, activation='relu')(state_input)
-        dense2 = layers.Dense(64, activation='relu')(dense1)
+        dense1 = layers.Dense(config["network_size"], activation='relu')(state_input)
+        dense2 = layers.Dense(config["network_size"], activation='relu')(dense1)
         
         # Output layer for action mean (no scaling here)
         action_mean = layers.Dense(self.action_size, activation=None)(dense2)
         
         # Output layer for action standard deviation
-        epsilon = 1e-5  # Small constant to ensure standard deviation is never zero
+        epsilon = config["std_epsilon"]  # Small constant to ensure standard deviation is never zero
         action_std = layers.Dense(self.action_size, activation='softplus')(dense2)
         action_std = layers.Lambda(lambda x: x + epsilon)(action_std)
 
@@ -36,8 +44,8 @@ class Agent:
         # Define critic model that maps (state, action) pairs to their Q-values
         state_input = layers.Input(shape=(self.state_size,))
 
-        dense1 = layers.Dense(64, activation='relu')(state_input)
-        dense2 = layers.Dense(64, activation='relu')(dense1)
+        dense1 = layers.Dense(config["network_size"], activation='relu')(state_input)
+        dense2 = layers.Dense(config["network_size"], activation='relu')(dense1)
         q_value_output = layers.Dense(1, activation=None)(dense2)  # Q-value output
 
         model = Model(inputs=state_input, outputs=q_value_output)

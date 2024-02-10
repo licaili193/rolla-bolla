@@ -115,7 +115,7 @@ class Environment:
         # Define a small threshold angle within which the reward is 1
         # It could be a fraction of the config["angle_threshold"]
         upright_threshold = config["angle_threshold"] * 0.1  # Example: 10% of the angle_threshold
-        zero_reward_threshold = config["angle_threshold"] * 0.9
+        zero_reward_threshold = config["angle_threshold"] * 0.3
 
         if pole_angle <= upright_threshold:
             reward = 1
