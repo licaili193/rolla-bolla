@@ -16,8 +16,9 @@ config = {
     "cart_width": 50,
     "cart_height": 30,
     "gravity": 981,  # pymunk uses pixels/s^2
-    "fps": 30,
-    "action_boundaries": (-400, 400),
+    "fps": 50,
+    "action_boundaries": (-600, 600),
+    "max_initial_impluse": 50,
     "angle_threshold": 1.2,  # Maximum angle (in radians) before considering the episode done
     "max_steps": 200,  # Maximum steps in an episode
 }
@@ -43,7 +44,10 @@ class Environment:
         
         # Create the cart
         cart_body = pymunk.Body(config["cart_mass"], pymunk.moment_for_box(config["cart_mass"], (config["cart_width"], config["cart_height"])))
-        cart_body.position = config["platform_position"][0], config["platform_position"][1] - config["cart_height"] / 2 - config["platform_height"] / 2
+        # Random x pose
+        # random_x = config["platform_position"][0] + np.random.uniform(-config["x_size"] / 4, config["x_size"] / 4)
+        random_x = config["platform_position"][0]
+        cart_body.position = random_x, config["platform_position"][1] - config["cart_height"] / 2 - config["platform_height"] / 2
         cart_shape = pymunk.Poly.create_box(cart_body, (config["cart_width"], config["cart_height"]))
         cart_shape.friction = config["friction"]
         self.space.add(cart_body, cart_shape)
@@ -69,7 +73,15 @@ class Environment:
         handler.begin = lambda *args, **kwargs: False
 
         # Step once with an action so that it's not an equilibrium state
-        self.cart.apply_impulse_at_local_point((-50, 0), (0, 0))
+        # Random impluse
+        # random_impluse = np.random.uniform(-config["max_initial_impluse"], config["max_initial_impluse"])
+        # if random_impluse < config["max_initial_impluse"] / 10 and random_impluse > -config["max_initial_impluse"] / 10:
+        #     if random_impluse > 0:
+        #         random_impluse = config["max_initial_impluse"] / 10
+        #     else:
+        #         random_impluse = -config["max_initial_impluse"] / 10
+        random_impluse = config["max_initial_impluse"]
+        self.cart.apply_impulse_at_local_point((random_impluse, 0), (0, 0))
 
     def reset(self):
         """Resets the environment to an initial state."""
@@ -96,7 +108,7 @@ class Environment:
         self.steps_since_reset += 1
         
         next_state = self._get_state()
-        reward = self._calculate_reward(state)
+        reward = self._calculate_reward(next_state)
         done = self._check_done(next_state)
         
         return next_state, reward, done
@@ -115,7 +127,7 @@ class Environment:
         # Define a small threshold angle within which the reward is 1
         # It could be a fraction of the config["angle_threshold"]
         upright_threshold = config["angle_threshold"] * 0.1  # Example: 10% of the angle_threshold
-        zero_reward_threshold = config["angle_threshold"] * 0.3
+        zero_reward_threshold = config["angle_threshold"] * 0.8
 
         if pole_angle <= upright_threshold:
             reward = 1
