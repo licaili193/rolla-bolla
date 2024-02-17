@@ -17,10 +17,11 @@ config = {
     "cart_height": 30,
     "gravity": 981,  # pymunk uses pixels/s^2
     "fps": 50,
-    "action_boundaries": (-600, 600),
+    "action_boundaries": (-1000, 1000),
     "max_initial_impluse": 50,
-    "angle_threshold": 1.2,  # Maximum angle (in radians) before considering the episode done
+    "angle_threshold": 0.21,  # Maximum angle (in radians) before considering the episode done
     "max_steps": 200,  # Maximum steps in an episode
+    "use_random": False,
 }
 
 class Environment:
@@ -45,8 +46,10 @@ class Environment:
         # Create the cart
         cart_body = pymunk.Body(config["cart_mass"], pymunk.moment_for_box(config["cart_mass"], (config["cart_width"], config["cart_height"])))
         # Random x pose
-        # random_x = config["platform_position"][0] + np.random.uniform(-config["x_size"] / 4, config["x_size"] / 4)
-        random_x = config["platform_position"][0]
+        if config["use_random"]:
+            random_x = config["platform_position"][0] + np.random.uniform(-config["x_size"] / 4, config["x_size"] / 4)
+        else:
+            random_x = config["platform_position"][0]
         cart_body.position = random_x, config["platform_position"][1] - config["cart_height"] / 2 - config["platform_height"] / 2
         cart_shape = pymunk.Poly.create_box(cart_body, (config["cart_width"], config["cart_height"]))
         cart_shape.friction = config["friction"]
@@ -74,13 +77,15 @@ class Environment:
 
         # Step once with an action so that it's not an equilibrium state
         # Random impluse
-        # random_impluse = np.random.uniform(-config["max_initial_impluse"], config["max_initial_impluse"])
-        # if random_impluse < config["max_initial_impluse"] / 10 and random_impluse > -config["max_initial_impluse"] / 10:
-        #     if random_impluse > 0:
-        #         random_impluse = config["max_initial_impluse"] / 10
-        #     else:
-        #         random_impluse = -config["max_initial_impluse"] / 10
-        random_impluse = config["max_initial_impluse"]
+        if config["use_random"]:
+            random_impluse = np.random.uniform(-config["max_initial_impluse"], config["max_initial_impluse"])
+            if random_impluse < config["max_initial_impluse"] / 10 and random_impluse > -config["max_initial_impluse"] / 10:
+                if random_impluse > 0:
+                    random_impluse = config["max_initial_impluse"] / 10
+                else:
+                    random_impluse = -config["max_initial_impluse"] / 10
+        else:
+            random_impluse = config["max_initial_impluse"]
         self.cart.apply_impulse_at_local_point((random_impluse, 0), (0, 0))
 
     def reset(self):
@@ -108,8 +113,8 @@ class Environment:
         self.steps_since_reset += 1
         
         next_state = self._get_state()
-        reward = self._calculate_reward(next_state)
         done = self._check_done(next_state)
+        reward = self._calculate_reward(next_state)
         
         return next_state, reward, done
 
@@ -121,23 +126,7 @@ class Environment:
 
     def _calculate_reward(self, state):
         """Calculates the reward based on the current state."""
-        # Extract the pole's angle from the state
-        pole_angle = abs(state[2])  # Take the absolute value to consider deviation in both directions
-
-        # Define a small threshold angle within which the reward is 1
-        # It could be a fraction of the config["angle_threshold"]
-        upright_threshold = config["angle_threshold"] * 0.1  # Example: 10% of the angle_threshold
-        zero_reward_threshold = config["angle_threshold"] * 0.8
-
-        if pole_angle <= upright_threshold:
-            reward = 1
-        elif pole_angle >= zero_reward_threshold:
-            reward = 0
-        else:
-            # Linearly interpolate the reward between the upright_threshold and angle_threshold
-            reward = 1 - (pole_angle - upright_threshold) / (zero_reward_threshold - upright_threshold)
-
-        return reward
+        return 1.0
 
     def _check_done(self, state):
         """Checks if the episode is done."""
