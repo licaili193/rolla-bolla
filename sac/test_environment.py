@@ -35,9 +35,11 @@ while running:
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_LEFT]:
+        action = config["action_space"][0]
+    elif keys[pygame.K_RIGHT]:
+        action = config["action_space"][1]
+    else:
         action = 0
-    if keys[pygame.K_RIGHT]:
-        action = 1
     
     # Step the environment with the current action
     next_state, reward, done, _, _ = env.step(action)
