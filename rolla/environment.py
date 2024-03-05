@@ -6,8 +6,8 @@ import cv2
 import math
 
 humanoid_config = {
-    "torso_mass": 10,
-    "limb_mass": 1,
+    "torso_mass": 30,
+    "limb_mass": 5,
     "torso_length": 50,
     "torso_width": 30,
     "upper_arm_length": 30,
@@ -31,7 +31,7 @@ environment_config = {
     "plank_height": 5,
     "ball_radius": 25,
     "ball_anchor": (300, 515),
-    "ball_mass": 2,
+    "ball_mass": 10,
 }
 
 config = {
@@ -41,9 +41,9 @@ config = {
     "environment_config": environment_config,
     "gravity": 981,  # pymunk uses pixels/s^2
     "fps": 50,
-    "state_dimention": 6 * 11,
+    "state_dimention": 60,
     "action_dimention": 8,
-    "action_scale": 500,
+    "action_scale": 2000,
     "plank_tipover_threshold": 0.8,
     "torso_tipover_threshold": 1.5,
     "plank_ball_deviation_threshold": 40,
@@ -424,10 +424,12 @@ class Environment:
     def _get_state(self):
         """Returns the current state of the system."""
         status = []
-        # Plank
-        status += get_object_status(self.prop_list[0])
         # Ball
-        status += get_object_status(self.prop_list[1])
+        temp_status = get_object_status(self.prop_list[1])
+        status += [temp_status[0], temp_status[3]]
+        # Plank
+        temp_status = get_object_status(self.prop_list[0])
+        status += [temp_status[0], temp_status[2], temp_status[3], temp_status[5]]
         # Torso
         status += get_object_status(self.torso)
         # Limbs
@@ -446,27 +448,30 @@ class Environment:
         return 1.0
 
     @staticmethod
-    def _check_tip_over(state, starting_index, threshold, offset=0):
+    def _check_tip_over(angle, threshold, offset=0):
         # Get the angle value and check
-        return abs(state[starting_index + 2] - offset) > threshold
+        return abs(angle - offset) > threshold
     
-    def _check_deviation(state, starting_index_1, starting_index_2, threshold):
+    @staticmethod
+    def _check_deviation(x_1, x_2, threshold):
         # Get the x value and check
-        return abs(state[starting_index_1] - state[starting_index_2]) > threshold
+        return abs(x_1 - x_2) > threshold
 
     def _check_done(self, state):
         """Checks if the episode is done."""
+        
+        status = get_object_status(self.prop_list[1])
         # Check if the plank has tipped over
-        if Environment._check_tip_over(state, 0, config["plank_tipover_threshold"]):
+        if Environment._check_tip_over(state[3], config["plank_tipover_threshold"]):
             return True
         # Check if the torso has tipped over
-        if Environment._check_tip_over(state, 12, config["torso_tipover_threshold"], 1.57):
+        if Environment._check_tip_over(state[8], config["torso_tipover_threshold"], 1.57):
             return True
         # Check if the torso has left the plank
-        if Environment._check_deviation(state, 12, 6, config["plank_torso_deviation_threshold"]):
+        if Environment._check_deviation(state[6], state[2], config["plank_torso_deviation_threshold"]):
             return True
         # Check if the ball has left the plank
-        if Environment._check_deviation(state, 0, 6, config["plank_ball_deviation_threshold"]):
+        if Environment._check_deviation(state[0], state[2], config["plank_ball_deviation_threshold"]):
             return True
 
         return False

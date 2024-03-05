@@ -1,19 +1,43 @@
-import matplotlib.pyplot as plt
+import os
+import shutil
 import numpy as np
+import matplotlib.pyplot as plt
+import argparse
 from agent import SACAgent
 from environment import Environment, config
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='SAC Agent Training')
+    parser.add_argument('--recover', action='store_true', help='Recover training from the latest save')
+    args = parser.parse_args()
+    recover = args.recover
+
+    save_folder = "save"
+    if not recover:
+        if os.path.exists(save_folder):
+            shutil.rmtree(save_folder)
+        os.makedirs(save_folder)
+
     env = Environment()
     agent = SACAgent(input_dims=[config["state_dimention"]], env=env, n_actions=config["action_dimention"], action_scale=config["action_scale"])
-    n_games = 15000
+    n_games = 30000
 
     score_history = []
-    
-    solving_score = 595
+
+    if recover:
+        latest_episode = max([int(f.split('ep')[1]) for f in os.listdir(save_folder) if f.startswith("models_ep")])
+        agent.load_models(os.path.join(save_folder, f"models_ep{latest_episode}"))
+        agent.load_replay_buffer(os.path.join(save_folder, f"replay_buffer_ep{latest_episode}"))
+        score_history = list(np.load(os.path.join(save_folder, f"score_history_{latest_episode}.npy")))
+        print(f"Recovered from episode {latest_episode}")
+        start_episode = latest_episode + 1
+    else:
+        start_episode = 0
+
+    solving_score = 395
     solving_count = 0
-    max_steps_per_episode = 600
-    for i in range(n_games):
+    max_steps_per_episode = 400
+    for i in range(start_episode, n_games):
         observation = env.reset()[0]
         done = False
         score = 0
@@ -42,6 +66,15 @@ if __name__ == '__main__':
             print(f"Solved at episode {i + 1}!")
             break
 
+        if i % 500 == 0 and i > 0:
+            agent.save_models(os.path.join(save_folder, f"models_ep{i}"))
+            agent.save_replay_buffer(os.path.join(save_folder, f"replay_buffer_ep{i}"))
+            np.save(os.path.join(save_folder, f"score_history_{i}.npy"), np.array(score_history))
+
+    agent.save_models(os.path.join(save_folder, f"models_ep{n_games}"))
+    agent.save_replay_buffer(os.path.join(save_folder, f"replay_buffer_ep{n_games}"))
+    np.save(os.path.join(save_folder, "score_history_final.npy"), np.array(score_history))
+
     plt.plot(score_history)
     plt.title("Episode Rewards")
     plt.savefig("train.png")
@@ -52,7 +85,7 @@ if __name__ == '__main__':
     render_env.start_recording()
 
     state = render_env.reset()[0]
-    for step in range(1800):
+    for step in range(1600):
         action = agent.choose_action(state)
         state, _, _, _, _ = render_env.step(action)
 
