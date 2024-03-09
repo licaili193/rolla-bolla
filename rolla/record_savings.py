@@ -10,7 +10,7 @@ if not os.path.exists(output_folder):
 
 for filename in os.listdir(save_folder):
     if filename.startswith("models_ep"):
-        episode = filename.split('_')[2]
+        episode = filename.split('_ep')[1]
         print(f"Recording model from episode {episode}...")
 
         env = Environment(True)
