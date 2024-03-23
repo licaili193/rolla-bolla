@@ -1,9 +1,8 @@
-import numpy as np
 import pymunk
-import pygame
-import pymunk.pygame_util
-import cv2
+import numpy as np
 import math
+
+from environment.environment import BaseEnvironment
 
 humanoid_config = {
     "torso_mass": 30,
@@ -49,7 +48,6 @@ config = {
     "plank_ball_deviation_threshold": 40,
     "plank_torso_deviation_threshold": 40,
 }
-
 
 # Humanoid
 
@@ -351,78 +349,20 @@ def get_object_status(object):
     # Normalize the x and y position and velocity
     return [object.position.x / 100, object.position.y / 100, object.angle, object.velocity.x / 100, object.velocity.y / 100, object.angular_velocity]
 
-def pygame_to_cvimage(surface):
-    """Convert Pygame surface to an OpenCV image."""
-    view = pygame.surfarray.array3d(surface)
-    view = view.transpose([1, 0, 2])
-    img_bgr = cv2.cvtColor(view, cv2.COLOR_RGB2BGR)
-    return img_bgr
-
-class Environment:
-    def __init__(self, enable_rendering=False):
-        self.reset()
-
-        self.enable_rendering = enable_rendering  # Control rendering initialization
-        if self.enable_rendering:
-            # Initialize Pygame for rendering
-            pygame.init()
-            self.screen_size = (config["x_size"], config["y_size"])
-            self.screen = pygame.display.set_mode(self.screen_size)
-            self.offscreen_surface = None  # Surface for off-screen rendering during recording
-            self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
-            pymunk.pygame_util.positive_y_is_up = False
-            self.video_writer = None
+class BollaRollaEnvironment(BaseEnvironment):
+    config = config
 
     def _create_objects(self):
         self.space = pymunk.Space()
-        self.space.gravity = (0, config["gravity"])
+        self.space.gravity = (0, self.config["gravity"])
 
-        self.limb_list, self.torso = create_humanoid(self.space, config["humanoid_config"])
-        self.prop_list = create_environment(self.space, config["environment_config"])
+        self.limb_list, self.torso = create_humanoid(self.space, self.config["humanoid_config"])
+        self.prop_list = create_environment(self.space, self.config["environment_config"])
 
-    def reset(self):
-        """Resets the environment to an initial state."""
-        self._create_objects()
-        self.steps_since_reset = 0  # Reset step counter
-        return (self._get_state(), {}) # Match the return type of gym's reset function
-
-    def step(self, action):
-        """Simulates taking an action in the environment."""
-        action = list(action)
-        assert len(action) == len(self.limb_list)
-
+    def _step_simulation(self, action):
         apply_angular_impulse_to_bodies(self.limb_list, action)
-        
-        # Step the simulation
-        self.space.step(1/config["fps"])
-
-        # Increment step count
-        self.steps_since_reset += 1
-        
-        next_state = self._get_state()
-        done = self._check_done(next_state)
-        reward = self._calculate_reward(next_state)
-
-        # If recording, add the current frame to the video
-        if self.enable_rendering and self.video_writer:
-            # Clear the off-screen surface with white background
-            self.offscreen_surface.fill((255, 255, 255))
-            
-            # Draw the environment using Pymunk's debug draw
-            self.draw_options.surface = self.offscreen_surface  # Set the draw surface to the off-screen surface
-            self.space.debug_draw(self.draw_options)
-            
-            # Convert the off-screen surface to an OpenCV image and write to video
-            cv_image = pygame_to_cvimage(self.offscreen_surface)
-            self.video_writer.write(cv_image)
-
-            # Reset the draw surface to the Pygame screen
-            self.draw_options.surface = self.screen
-        
-        return next_state, reward, done, False, {}  # Match the return type of gym's step function
-
+    
     def _get_state(self):
-        """Returns the current state of the system."""
         status = []
         # Ball
         temp_status = get_object_status(self.prop_list[1])
@@ -444,7 +384,6 @@ class Environment:
         return np.array(status)
 
     def _calculate_reward(self, state):
-        """Calculates the reward based on the current state."""
         return 1.0
 
     @staticmethod
@@ -462,31 +401,16 @@ class Environment:
         
         status = get_object_status(self.prop_list[1])
         # Check if the plank has tipped over
-        if Environment._check_tip_over(state[3], config["plank_tipover_threshold"]):
+        if BollaRollaEnvironment._check_tip_over(state[3], self.config["plank_tipover_threshold"]):
             return True
         # Check if the torso has tipped over
-        if Environment._check_tip_over(state[8], config["torso_tipover_threshold"], 1.57):
+        if BollaRollaEnvironment._check_tip_over(state[8], self.config["torso_tipover_threshold"], 1.57):
             return True
         # Check if the torso has left the plank
-        if Environment._check_deviation(state[6], state[2], config["plank_torso_deviation_threshold"]):
+        if BollaRollaEnvironment._check_deviation(state[6], state[2], self.config["plank_torso_deviation_threshold"]):
             return True
         # Check if the ball has left the plank
-        if Environment._check_deviation(state[0], state[2], config["plank_ball_deviation_threshold"]):
+        if BollaRollaEnvironment._check_deviation(state[0], state[2], self.config["plank_ball_deviation_threshold"]):
             return True
 
         return False
-    
-    def start_recording(self, filename='simulation.mp4', fps=config["fps"]):
-        """Starts recording the simulation to a video file."""
-        if self.enable_rendering:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec
-            self.video_writer = cv2.VideoWriter(filename, fourcc, fps, self.screen_size)
-            # Create an off-screen surface for rendering during recording
-            self.offscreen_surface = pygame.Surface(self.screen_size)
-
-    def end_recording(self):
-        """Ends the recording and releases the video writer."""
-        if self.enable_rendering and self.video_writer:
-            self.video_writer.release()
-            self.video_writer = None
-            self.offscreen_surface = None

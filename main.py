@@ -4,13 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 from agent import SACAgent
-from environment import Environment, config
+from environment import create_environment
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='SAC Agent Training')
     parser.add_argument('--recover', action='store_true', help='Recover training from the latest save')
+    parser.add_argument('--env_name', type=str, default='DefaultEnvironment', help='Name of the environment')
     args = parser.parse_args()
     recover = args.recover
+    env_name = args.env_name
 
     save_folder = "save"
     if not recover:
@@ -18,8 +20,9 @@ if __name__ == '__main__':
             shutil.rmtree(save_folder)
         os.makedirs(save_folder)
 
-    env = Environment()
-    agent = SACAgent(input_dims=[config["state_dimention"]], env=env, n_actions=config["action_dimention"], action_scale=config["action_scale"])
+    env = create_environment(env_name)
+    env.reset()
+    agent = SACAgent(input_dims=[env.config["state_dimention"]], env=env, n_actions=env.config["action_dimention"], action_scale=env.config["action_scale"])
     n_games = 30000
 
     score_history = []
@@ -81,7 +84,7 @@ if __name__ == '__main__':
 
     # Record 800 steps of the trained agent
     print("Recording...")
-    render_env = Environment(True)
+    render_env = create_environment(env_name, record=True)
     render_env.start_recording()
 
     state = render_env.reset()[0]

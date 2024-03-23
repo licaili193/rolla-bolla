@@ -3,8 +3,8 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.optimizers import Adam
-from buffer import ReplayBuffer
-from networks import ActorNetwork, CriticNetwork, ValueNetwork
+from agent.buffer import ReplayBuffer
+from agent.networks import ActorNetwork, CriticNetwork, ValueNetwork
 
 class SACAgent:
     def __init__(self, alpha=0.0003, beta=0.0003, input_dims=[8],
