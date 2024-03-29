@@ -350,9 +350,19 @@ def get_object_status(object):
     return [object.position.x / 100, object.position.y / 100, object.angle, object.velocity.x / 100, object.velocity.y / 100, object.angular_velocity]
 
 class BollaRollaEnvironment(BaseEnvironment):
+    """
+    The BollaRollaEnvironment class represents an environment for the BollaRolla game.
+    It inherits from the BaseEnvironment class and implements the necessary methods
+    for simulation, state retrieval, reward calculation, and episode termination checks.
+    """
+
     config = config
 
     def _create_objects(self):
+        """
+        Creates the objects in the environment, such as the humanoid and the environment props.
+        """
+
         self.space = pymunk.Space()
         self.space.gravity = (0, self.config["gravity"])
 
@@ -360,9 +370,17 @@ class BollaRollaEnvironment(BaseEnvironment):
         self.prop_list = create_environment(self.space, self.config["environment_config"])
 
     def _step_simulation(self, action):
+        """
+        Steps the simulation by applying the given action to the humanoid limbs.
+        """
+
         apply_angular_impulse_to_bodies(self.limb_list, action)
     
     def _get_state(self):
+        """
+        Retrieves the current state of the environment.
+        """
+
         status = []
         # Ball
         temp_status = get_object_status(self.prop_list[1])
@@ -384,21 +402,33 @@ class BollaRollaEnvironment(BaseEnvironment):
         return np.array(status)
 
     def _calculate_reward(self, state):
+        """
+        Calculates the reward based on the current state.
+        """
+
         return 1.0
 
     @staticmethod
     def _check_tip_over(angle, threshold, offset=0):
-        # Get the angle value and check
+        """
+        Checks if the given angle indicates tipping over, based on the threshold and offset.
+        """
+
         return abs(angle - offset) > threshold
     
     @staticmethod
     def _check_deviation(x_1, x_2, threshold):
-        # Get the x value and check
+        """
+        Checks if the given x values deviate by more than the threshold.
+        """
+
         return abs(x_1 - x_2) > threshold
 
     def _check_done(self, state):
-        """Checks if the episode is done."""
-        
+        """
+        Checks if the episode is done based on the current state.
+        """
+
         status = get_object_status(self.prop_list[1])
         # Check if the plank has tipped over
         if BollaRollaEnvironment._check_tip_over(state[3], self.config["plank_tipover_threshold"]):

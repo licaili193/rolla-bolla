@@ -26,9 +26,17 @@ config = {
     }
 
 class CartpoleEnvironment(BaseEnvironment):
+    """
+    This class represents the environment for the Cartpole problem.
+    It inherits from the BaseEnvironment class.
+    """
+
     config =  config
     
     def _create_objects(self):
+        """
+        Creates the objects required for the Cartpole environment.
+        """
         self.space = pymunk.Space()
         self.space.gravity = (0, self.config["gravity"])
 
@@ -70,15 +78,27 @@ class CartpoleEnvironment(BaseEnvironment):
         self.cart.apply_impulse_at_local_point((impluse, 0), (0, 0))
 
     def _step_simulation(self, action):
+        """
+        Applies a force to the cart based on the given action.
+        """
         # Apply force to the cart
         force = (action[0], 0)
         self.cart.apply_force_at_local_point(force, (0, 0))
     
     def _get_state(self):
+        """
+        Returns the current state of the environment.
+        """
         return np.array([self.cart.position.x / 100, self.cart.velocity.x / 100, self.pole.angle, self.pole.angular_velocity])
 
     def _calculate_reward(self, state):
+        """
+        Calculates the reward based on the current state.
+        """
         return 1.0
 
     def _check_done(self, state):
+        """
+        Checks if the episode is done based on the current state.
+        """
         return abs(state[2]) > self.config["angle_threshold"] or state[0] < 0 or state[0] > self.config["x_size"]

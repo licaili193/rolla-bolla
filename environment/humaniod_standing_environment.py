@@ -246,9 +246,19 @@ def get_object_status(object):
 
 
 class HumaniodStandingEnvironment(BaseEnvironment):
+    """
+    A class representing a humanoid standing environment. It inherits from the BaseEnvironment class.
+    This environment simulates a humanoid standing and provides methods for stepping the simulation,
+    getting the current state, calculating the reward, and checking if the episode is done.
+    """
+
     config = config
 
     def _create_objects(self):
+        """
+        Creates the objects in the environment.
+        """
+
         self.space = pymunk.Space()
         self.space.gravity = (0, self.config["gravity"])
 
@@ -256,9 +266,17 @@ class HumaniodStandingEnvironment(BaseEnvironment):
         self.prop_list = create_environment(self.space, self.config["environment_config"])
 
     def _step_simulation(self, action):
+        """
+        Steps the simulation by applying the given action to the humanoid limbs.
+        """
+
         apply_angular_impulse_to_bodies(self.limb_list, action)
     
     def _get_state(self):
+        """
+        Retrieves the current state of the environment.
+        """
+
         status = []
         # Torso
         status += get_object_status(self.torso)
@@ -270,20 +288,33 @@ class HumaniodStandingEnvironment(BaseEnvironment):
         return np.array(status)
 
     def _calculate_reward(self, state):
+        """
+        Calculates the reward based on the current state.
+        """
+
         return 1.0
 
     @staticmethod
     def _check_tip_over(angle, threshold, offset=0):
-        # Get the angle value and check
+        """
+        Checks if the humanoid has tipped over based on the angle.
+        """
+
         return abs(angle - offset) > threshold
     
     @staticmethod
     def _check_deviation(x_1, x_2, threshold):
-        # Get the x value and check
+        """
+        Checks if there is a deviation between two x values.
+        """
+
         return abs(x_1 - x_2) > threshold
 
     def _check_done(self, state):
-        """Checks if the episode is done."""
+        """
+        Checks if the episode is done based on the current state.
+        """
+
         if state[1] > self.config["torso_fall_threshold"]:
             return True
         return False

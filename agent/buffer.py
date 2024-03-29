@@ -1,6 +1,24 @@
 import numpy as np
 
 class ReplayBuffer:
+    """
+    A replay buffer class that stores and samples transitions for reinforcement learning.
+
+    Parameters:
+    - max_size (int): The maximum size of the replay buffer.
+    - input_shape (tuple): The shape of the input state.
+    - n_actions (int): The number of possible actions.
+
+    Attributes:
+    - mem_size (int): The current size of the replay buffer.
+    - mem_cntr (int): The counter for the number of stored transitions.
+    - state_memory (ndarray): The memory for storing the current states.
+    - new_state_memory (ndarray): The memory for storing the next states.
+    - action_memory (ndarray): The memory for storing the actions.
+    - reward_memory (ndarray): The memory for storing the rewards.
+    - terminal_memory (ndarray): The memory for storing the terminal flags.
+    """
+
     def __init__(self, max_size, input_shape, n_actions):
         self.mem_size = max_size
         self.mem_cntr = 0
@@ -11,6 +29,16 @@ class ReplayBuffer:
         self.terminal_memory = np.zeros(self.mem_size, dtype=np.bool_)
 
     def store_transition(self, state, action, reward, state_, done):
+        """
+        Store a transition in the replay buffer.
+
+        Parameters:
+        - state (ndarray): The current state.
+        - action (ndarray): The action taken.
+        - reward (float): The reward received.
+        - state_ (ndarray): The next state.
+        - done (bool): Whether the episode is done.
+        """
         index = self.mem_cntr % self.mem_size
 
         self.state_memory[index] = state
@@ -22,6 +50,19 @@ class ReplayBuffer:
         self.mem_cntr += 1
 
     def sample_buffer(self, batch_size):
+        """
+        Sample a batch of transitions from the replay buffer.
+
+        Parameters:
+        - batch_size (int): The size of the batch to sample.
+
+        Returns:
+        - states (ndarray): The sampled states.
+        - actions (ndarray): The sampled actions.
+        - rewards (ndarray): The sampled rewards.
+        - states_ (ndarray): The sampled next states.
+        - dones (ndarray): The sampled terminal flags.
+        """
         max_mem = min(self.mem_cntr, self.mem_size)
 
         batch = np.random.choice(max_mem, batch_size)

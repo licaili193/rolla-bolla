@@ -10,7 +10,21 @@ def pygame_to_cvimage(surface):
     return img_bgr
 
 class BaseEnvironment:
-    # Dummy configuration for the base class
+    """
+    Base class for creating custom environments.
+
+    Attributes:
+        config (dict): Configuration parameters for the environment.
+        enable_rendering (bool): Flag to enable rendering of the environment.
+        screen_size (tuple): Size of the Pygame screen for rendering.
+        screen (pygame.Surface): Pygame screen object for rendering.
+        offscreen_surface (pygame.Surface): Surface for off-screen rendering during recording.
+        draw_options (pymunk.pygame_util.DrawOptions): Draw options for Pymunk's debug draw.
+        video_writer (cv2.VideoWriter): Video writer object for recording the simulation.
+        steps_since_reset (int): Counter for the number of steps since the last reset.
+        space (pymunk.Space): Pymunk physics space for the environment.
+    """
+
     config = {
         "x_size": 600,
         "y_size": 600,
@@ -18,85 +32,132 @@ class BaseEnvironment:
     }
 
     def __init__(self, enable_rendering=False):
-        self.enable_rendering = enable_rendering  # Control rendering initialization
+        """
+        Initializes the BaseEnvironment.
+
+        Args:
+            enable_rendering (bool, optional): Flag to enable rendering of the environment. Defaults to False.
+        """
+        self.enable_rendering = enable_rendering
         if self.enable_rendering:
-            # Initialize Pygame for rendering
             pygame.init()
             self.screen_size = (self.config["x_size"], self.config["y_size"])
             self.screen = pygame.display.set_mode(self.screen_size)
-            self.offscreen_surface = None  # Surface for off-screen rendering during recording
+            self.offscreen_surface = None
             self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
             pymunk.pygame_util.positive_y_is_up = False
             self.video_writer = None
 
     def reset(self):
-        """Resets the environment to an initial state."""
+        """
+        Resets the environment to an initial state.
+
+        Returns:
+            tuple: A tuple containing the initial state and an empty dictionary.
+        """
         self._create_objects()
-        self.steps_since_reset = 0  # Reset step counter
-        return (self._get_state(), {})  # Match the return type of gym's reset function
+        self.steps_since_reset = 0
+        return (self._get_state(), {})
 
     def _step_simulation(self, action):
-        """Apply forces or torques and advance in simulation."""
+        """
+        Applies forces or torques and advances in simulation.
+
+        Args:
+            action (list): List of actions to be applied.
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses.
+        """
         raise NotImplementedError("Subclasses must implement this method")
-    
+
     def step(self, action):
-        """Simulates taking an action in the environment."""
+        """
+        Simulates taking an action in the environment.
+
+        Args:
+            action (list): List of actions to be applied.
+
+        Returns:
+            tuple: A tuple containing the next state, reward, done flag, False flag, and an empty dictionary.
+        """
         action = list(action)
 
         self._step_simulation(action)
-        
-        # Step the simulation
-        self.space.step(1/self.config["fps"])
 
-        # Increment step count
+        self.space.step(1 / self.config["fps"])
+
         self.steps_since_reset += 1
-        
+
         next_state = self._get_state()
         done = self._check_done(next_state)
         reward = self._calculate_reward(next_state)
 
-        # If recording, add the current frame to the video
         if self.enable_rendering and self.video_writer:
-            # Clear the off-screen surface with white background
             self.offscreen_surface.fill((255, 255, 255))
-            
-            # Draw the environment using Pymunk's debug draw
-            self.draw_options.surface = self.offscreen_surface  # Set the draw surface to the off-screen surface
+            self.draw_options.surface = self.offscreen_surface
             self.space.debug_draw(self.draw_options)
-            
-            # Convert the off-screen surface to an OpenCV image and write to video
             cv_image = pygame_to_cvimage(self.offscreen_surface)
             self.video_writer.write(cv_image)
-
-            # Reset the draw surface to the Pygame screen
             self.draw_options.surface = self.screen
-        
-        return next_state, reward, done, False, {}  # Match the return type of gym's step function
+
+        return next_state, reward, done, False, {}
 
     def _create_objects(self):
-        """Init environment."""
+        """
+        Initializes the environment.
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def _get_state(self):
-        """Returns the current state of the system."""
+        """
+        Returns the current state of the system.
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def _calculate_reward(self, state):
-        """Calculates the reward based on the current state."""
+        """
+        Calculates the reward based on the current state.
+
+        Args:
+            state: The current state of the system.
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def _check_done(self, state):
-        """Checks if the episode is done."""
+        """
+        Checks if the episode is done.
+
+        Args:
+            state: The current state of the system.
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def start_recording(self, filename='simulation.mp4', fps=None):
-        """Starts recording the simulation to a video file."""
+        """
+        Starts recording the simulation to a video file.
+
+        Args:
+            filename (str, optional): Name of the video file. Defaults to 'simulation.mp4'.
+            fps (int, optional): Frames per second for the video. Defaults to None.
+        """
         if self.enable_rendering:
             if fps is None:
                 fps = self.config["fps"]
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             self.video_writer = cv2.VideoWriter(filename, fourcc, fps, self.screen_size)
-            # Create an off-screen surface for rendering during recording
             self.offscreen_surface = pygame.Surface(self.screen_size)
 
     def end_recording(self):
@@ -107,5 +168,10 @@ class BaseEnvironment:
             self.offscreen_surface = None
 
     def get_config(self):
-        """Returns the configuration of the environment."""
+        """
+        Returns the configuration of the environment.
+
+        Returns:
+            dict: The configuration parameters of the environment.
+        """
         return self.config
