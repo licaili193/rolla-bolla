@@ -294,22 +294,6 @@ class HumaniodStandingEnvironment(BaseEnvironment):
 
         return 1.0
 
-    @staticmethod
-    def _check_tip_over(angle, threshold, offset=0):
-        """
-        Checks if the humanoid has tipped over based on the angle.
-        """
-
-        return abs(angle - offset) > threshold
-    
-    @staticmethod
-    def _check_deviation(x_1, x_2, threshold):
-        """
-        Checks if there is a deviation between two x values.
-        """
-
-        return abs(x_1 - x_2) > threshold
-
     def _check_done(self, state):
         """
         Checks if the episode is done based on the current state.
