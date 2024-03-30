@@ -2,7 +2,22 @@ import cv2
 import os
 import re
 
+import os
+import re
+import cv2
+
 def images_to_video(folder_path, output_video, frame_rate=30):
+    """
+    Convert a sequence of PNG images in a folder to a video.
+
+    Args:
+        folder_path (str): The path to the folder containing the PNG images.
+        output_video (str): The path to the output video file.
+        frame_rate (int, optional): The frame rate of the output video. Defaults to 30.
+
+    Returns:
+        None
+    """
     # Get all PNG files in the folder
     image_files = [f for f in os.listdir(folder_path) if f.endswith('.png')]
 

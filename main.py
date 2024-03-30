@@ -6,14 +6,18 @@ import argparse
 from agent import SACAgent
 from environment import create_environment
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='SAC Agent Training')
-    parser.add_argument('--recover', action='store_true', help='Recover training from the latest save')
-    parser.add_argument('--env_name', type=str, default='DefaultEnvironment', help='Name of the environment')
-    args = parser.parse_args()
-    recover = args.recover
-    env_name = args.env_name
+def train_agent(recover=False, env_name='DefaultEnvironment', n_games=30000):
+    """
+    Train a SAC agent on a given environment.
 
+    Args:
+        recover (bool): Whether to recover training from the latest save.
+        env_name (str): Name of the environment.
+        n_games (int): Number of episodes to train the agent.
+
+    Returns:
+        None
+    """
     save_folder = "save"
     if not recover:
         if os.path.exists(save_folder):
@@ -23,7 +27,6 @@ if __name__ == '__main__':
     env = create_environment(env_name)
     env.reset()
     agent = SACAgent(input_dims=[env.config["state_dimention"]], env=env, n_actions=env.config["action_dimention"], action_scale=env.config["action_scale"])
-    n_games = 30000
 
     score_history = []
 
@@ -94,3 +97,13 @@ if __name__ == '__main__':
 
     render_env.end_recording()
     print("Done recording")
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='SAC Agent Training')
+    parser.add_argument('--recover', action='store_true', help='Recover training from the latest save')
+    parser.add_argument('--env_name', type=str, default='DefaultEnvironment', help='Name of the environment')
+    args = parser.parse_args()
+    recover = args.recover
+    env_name = args.env_name
+
+    train_agent(recover=recover, env_name=env_name)

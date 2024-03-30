@@ -5,6 +5,19 @@ import numpy as np
 import math
 
 def combine_videos_in_grid(folder_path, output_folder, max_dimension=1280):
+    """
+    Combines multiple videos into a grid layout and saves the resulting frames as images.
+
+    Args:
+        folder_path (str): The path to the folder containing the video files.
+        output_folder (str): The path to the folder where the combined frames will be saved.
+        max_dimension (int, optional): The maximum dimension (width or height) of the output frames. Defaults to 1280.
+
+    Returns:
+        None
+    """
+    # Rest of the code...
+def combine_videos_in_grid(folder_path, output_folder, max_dimension=1280):
     # Create output folder if it doesn't exist
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)

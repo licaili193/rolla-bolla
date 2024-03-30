@@ -6,6 +6,15 @@ import argparse
 from environment import create_environment
 
 def main(env_name):
+    """
+    The main function that runs the game loop for the environment.
+
+    Args:
+        env_name (str): The name of the environment.
+
+    Returns:
+        None
+    """
     # Pygame setup
     pygame.init()
     pygame.font.init()  # Initialize the font module

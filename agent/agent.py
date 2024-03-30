@@ -50,7 +50,7 @@ class SACAgent:
         self.target_value.compile(optimizer=Adam(learning_rate=beta))
 
         self.scale = reward_scale
-        self.update_network_parameters(tau=1)
+        self.update_value_target_network_parameters(tau=1)
 
     def choose_action(self, observation):
         """
@@ -80,7 +80,7 @@ class SACAgent:
         """
         self.memory.store_transition(state, action, reward, new_state, done)
 
-    def update_network_parameters(self, tau=None):
+    def update_value_target_network_parameters(self, tau=None):
         """
         Update the parameters of the target value network.
 
@@ -140,6 +140,7 @@ class SACAgent:
         rewards = tf.convert_to_tensor(reward, dtype=tf.float32)
         actions = tf.convert_to_tensor(action, dtype=tf.float32)
 
+        # Update the value network
         with tf.GradientTape() as tape:
             value = tf.squeeze(self.value(states), 1)
             value_ = tf.squeeze(self.target_value(states_), 1)
@@ -159,6 +160,7 @@ class SACAgent:
         self.value.optimizer.apply_gradients(zip(
             value_network_gradient, self.value.trainable_variables))
 
+        # Update the actor network
         with tf.GradientTape() as tape:
             new_policy_actions, log_probs = self.actor.sample_normal(states)
             log_probs = tf.squeeze(log_probs, 1)
@@ -175,6 +177,7 @@ class SACAgent:
         self.actor.optimizer.apply_gradients(zip(
             actor_network_gradient, self.actor.trainable_variables))
 
+        # Update the critic networks
         with tf.GradientTape(persistent=True) as tape:
             q_hat = self.scale * reward + self.gamma * value_ * (1 - done)
             q1_old_policy = tf.squeeze(self.critic_1(state, action), 1)
@@ -192,7 +195,7 @@ class SACAgent:
         self.critic_2.optimizer.apply_gradients(zip(
             critic_2_network_gradient, self.critic_2.trainable_variables))
 
-        self.update_network_parameters()
+        self.update_value_target_network_parameters()
 
     def save_replay_buffer(self, folder_path):
         """
