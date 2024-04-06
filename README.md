@@ -164,3 +164,5 @@ For all three environments, we save the model every 500 episodes. Specifically, 
 The difficulty of the environments is reflected in the training results. For the `CartpoleEnvironment`, the problem is fully resolved around 450 episodes. In contrast, the `HumanoidStandingEnvironment` is resolved around 2400 episodes, and the `BollaRollaEnvironment` (Balance Ball) took about 15500 episodes to finish. Notably, the last model's performance in the Balance Ball environment is no better than one of the near intermediate models, indicating that the problem is not fully resolved, but the training was terminated due to the termination condition we set.
 
 Interestingly, for the `HumanoidStandingEnvironment`, the standing pose is very strange, and for the `BollaRollaEnvironment` (Balance Ball), the humanoid is trying to sit and balance instead of stand and balance. This is because we set the step rewards trivially, with a constant reward of 1 if the episode is not finished. Exploring more sophisticated ways to design the reward may lead to improved results.
+
+### This is for comment
